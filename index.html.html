@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<!-- Sitenizin sekme başlığı (Anahtar kelimeler içermeli) -->
+<title>Çevrimiçi Alarm ve Sayaç - Dijital Saat Uygulaması</title>
+
+<!-- Google arama sonuçlarında görünecek kısa açıklama -->
+<meta name="description" content="Ücretsiz ve güvenilir çevrimiçi alarm kurma, sayaç ve kronometre uygulaması. Dijital saat fonksiyonu ile zamanı kolayca yönetin.">
+
+<!-- Sitenizle ilgili anahtar kelimeler -->
+<meta name="keywords" content="alarm, sayaç, kronometre, çevrimiçi alarm, dijital saat, online alarm">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Zaman Yöneticisi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Roboto Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Roboto Mono', 'monospace'],
+                    },
+                    colors: {
+                        dark: '#0f172a',
+                        darker: '#0b1120',
+                        primary: '#3b82f6',
+                        accent: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .time-display {
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary selection:text-white">
+
+    <div class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col pt-8">
+        <!-- Header / Logo -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                <i class="fa-solid fa-clock mr-2 text-blue-400"></i>CHRONOS
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Zamanın Kontrolü Sende</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="glass-panel rounded-2xl p-2 mb-6 flex justify-between sm:justify-center space-x-1 sm:space-x-4 overflow-x-auto">
+            <button onclick="switchTab('clock')" id="nav-clock" class="nav-btn active flex-1 sm:flex-none px-4 py-3 rounded-xl transition-all duration-300 bg-blue-600/20 text-blue-400 font-medium">
+                <i class="fa-solid fa-globe mr-2"></i><span class="hidden sm:inline">Saatler</span>
+            </button>
+            <button onclick="switchTab('alarm')" id="nav-alarm" class="nav-btn flex-1 sm:flex-none px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-800 text-slate-300 font-medium">
+                <i class="fa-solid fa-bell mr-2"></i><span class="hidden sm:inline">Alarm</span>
+            </button>
+            <button onclick="switchTab('stopwatch')" id="nav-stopwatch" class="nav-btn flex-1 sm:flex-none px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-800 text-slate-300 font-medium">
+                <i class="fa-solid fa-stopwatch mr-2"></i><span class="hidden sm:inline">Kronometre</span>
+            </button>
+            <button onclick="switchTab('timer')" id="nav-timer" class="nav-btn flex-1 sm:flex-none px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-800 text-slate-300 font-medium">
+                <i class="fa-solid fa-hourglass-half mr-2"></i><span class="hidden sm:inline">Sayaç</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="glass-panel rounded-3xl p-6 sm:p-10 flex-grow relative overflow-hidden flex flex-col justify-center">
+
+            <!-- TAB: WORLD CLOCK -->
+            <div id="tab-clock" class="tab-content active text-center">
+                <div class="mb-10">
+                    <h2 class="text-slate-400 uppercase tracking-widest text-sm mb-2 font-semibold">Yerel Saat</h2>
+                    <div id="local-time" class="time-display font-mono text-6xl sm:text-8xl font-bold text-white mb-2">00:00:00</div>
+                    <div id="local-date" class="text-xl text-blue-300">1 Ocak Pazartesi</div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 border-t border-slate-700/50 pt-8">
+                    <!-- World Clocks will be injected here -->
+                    <div class="bg-slate-800/50 p-4 rounded-2xl">
+                        <h3 class="text-slate-400 text-xs uppercase mb-1">New York</h3>
+                        <div id="ny-time" class="font-mono text-xl sm:text-2xl font-semibold text-slate-200">--:--</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-2xl">
+                        <h3 class="text-slate-400 text-xs uppercase mb-1">Londra</h3>
+                        <div id="lon-time" class="font-mono text-xl sm:text-2xl font-semibold text-slate-200">--:--</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-2xl">
+                        <h3 class="text-slate-400 text-xs uppercase mb-1">Tokyo</h3>
+                        <div id="tok-time" class="font-mono text-xl sm:text-2xl font-semibold text-slate-200">--:--</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-2xl">
+                        <h3 class="text-slate-400 text-xs uppercase mb-1">Sidney</h3>
+                        <div id="syd-time" class="font-mono text-xl sm:text-2xl font-semibold text-slate-200">--:--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: ALARM -->
+            <div id="tab-alarm" class="tab-content">
+                <div class="max-w-md mx-auto">
+                    <div class="flex items-end gap-4 mb-8 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50">
+                        <div class="flex-grow">
+                            <label class="block text-slate-400 text-sm mb-2 ml-1">Alarm Saati</label>
+                            <input type="time" id="alarm-input" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-2xl font-mono text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                        </div>
+                        <button onclick="addAlarm()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-blue-500/30 transition-all transform hover:scale-105 active:scale-95 h-[58px]">
+                            <i class="fa-solid fa-plus"></i> Ekle
+                        </button>
+                    </div>
+
+                    <h3 class="text-slate-400 text-sm uppercase tracking-wider mb-4 ml-2 border-b border-slate-700/50 pb-2">Aktif Alarmlar</h3>
+                    <ul id="alarm-list" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                        <!-- Alarms will be listed here -->
+                        <li class="text-center text-slate-500 py-4 italic" id="no-alarm-msg">Henüz alarm kurulmadı.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TAB: STOPWATCH -->
+            <div id="tab-stopwatch" class="tab-content text-center">
+                <div class="mb-10">
+                    <div id="sw-display" class="time-display font-mono text-6xl sm:text-8xl font-bold text-white tracking-wider">00:00.00</div>
+                </div>
+                
+                <div class="flex justify-center gap-4 mb-8">
+                    <button id="sw-start-btn" onclick="toggleStopwatch()" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl transition-all hover:bg-slate-700 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button id="sw-lap-btn" onclick="lapStopwatch()" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl transition-all hover:bg-slate-700 text-slate-300 disabled:opacity-50" disabled>
+                        <i class="fa-solid fa-flag"></i>
+                    </button>
+                    <button onclick="resetStopwatch()" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl transition-all hover:bg-slate-700 text-red-400">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+
+                <div class="max-w-sm mx-auto bg-slate-800/30 rounded-2xl overflow-hidden border border-slate-700/50 hidden" id="sw-laps-container">
+                    <div class="bg-slate-800/80 px-4 py-2 text-sm text-slate-400 flex justify-between font-semibold border-b border-slate-700">
+                        <span>Tur</span>
+                        <span>Süre</span>
+                        <span>Toplam</span>
+                    </div>
+                    <ul id="sw-laps" class="max-h-48 overflow-y-auto">
+                        <!-- Laps will be injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TAB: TIMER -->
+            <div id="tab-timer" class="tab-content text-center">
+                
+                <!-- Input Mode -->
+                <div id="timer-input-mode" class="mb-10">
+                    <div class="flex justify-center items-center gap-2 sm:gap-6 text-3xl sm:text-5xl font-mono text-white mb-8">
+                        <div class="flex flex-col items-center">
+                            <input type="number" id="timer-h" min="0" max="99" value="00" class="w-20 sm:w-28 bg-slate-900 border border-slate-700 rounded-xl text-center py-2 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            <span class="text-xs sm:text-sm text-slate-500 mt-2 font-sans">SAAT</span>
+                        </div>
+                        <span class="text-slate-500 pb-6">:</span>
+                        <div class="flex flex-col items-center">
+                            <input type="number" id="timer-m" min="0" max="59" value="05" class="w-20 sm:w-28 bg-slate-900 border border-slate-700 rounded-xl text-center py-2 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            <span class="text-xs sm:text-sm text-slate-500 mt-2 font-sans">DAKİKA</span>
+                        </div>
+                        <span class="text-slate-500 pb-6">:</span>
+                        <div class="flex flex-col items-center">
+                            <input type="number" id="timer-s" min="0" max="59" value="00" class="w-20 sm:w-28 bg-slate-900 border border-slate-700 rounded-xl text-center py-2 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            <span class="text-xs sm:text-sm text-slate-500 mt-2 font-sans">SANİYE</span>
+                        </div>
+                    </div>
+                    <button onclick="startTimer()" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-full font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all transform hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-play mr-2"></i> Başlat
+                    </button>
+                </div>
+
+                <!-- Countdown Mode -->
+                <div id="timer-countdown-mode" class="mb-10 hidden">
+                    <!-- Circular Progress wrapper -->
+                    <div class="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto mb-8 flex items-center justify-center">
+                        <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="48%" fill="none" stroke="#1e293b" stroke-width="8"></circle>
+                            <circle id="timer-progress" cx="50%" cy="50%" r="48%" fill="none" stroke="#3b82f6" stroke-width="8" stroke-dasharray="1000" stroke-dashoffset="0" class="transition-all duration-1000 ease-linear"></circle>
+                        </svg>
+                        <div id="timer-display" class="time-display font-mono text-5xl sm:text-7xl font-bold text-white relative z-10">
+                            00:00:00
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-4">
+                        <button id="timer-pause-btn" onclick="pauseTimer()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl transition-all hover:bg-slate-700 text-yellow-400">
+                            <i class="fa-solid fa-pause"></i>
+                        </button>
+                        <button onclick="resetTimer()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl transition-all hover:bg-slate-700 text-red-400">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Alert Modal (Replaces standard alert()) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-3xl max-w-sm w-full mx-4 text-center transform scale-90 transition-transform duration-300" id="modal-content">
+            <div id="modal-icon" class="text-5xl text-blue-400 mb-4 animate-bounce">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-2">Bildirim</h2>
+            <p id="modal-message" class="text-slate-300 mb-8">Zaman doldu!</p>
+            <button onclick="closeModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                Tamam
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- UI & TAB LOGIC ---
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600/20', 'text-blue-400', 'active');
+                btn.classList.add('text-slate-300', 'hover:bg-slate-800');
+            });
+            const activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.classList.add('bg-blue-600/20', 'text-blue-400', 'active');
+            activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        // Input formatter for timer
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('blur', function() {
+                if(this.value === '') this.value = '00';
+                else if(this.value.length === 1) this.value = '0' + this.value;
+            });
+            input.addEventListener('input', function() {
+                if(parseInt(this.value) > parseInt(this.max)) this.value = this.max;
+                if(parseInt(this.value) < parseInt(this.min)) this.value = this.min;
+            });
+        });
+
+        // --- AUDIO ENGINE (Synthesizes sound without external files) ---
+        let audioCtx;
+        function playBeepSound() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz beep
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.5);
+
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        let soundInterval;
+        function startAlarmSound() {
+            playBeepSound();
+            soundInterval = setInterval(playBeepSound, 800);
+        }
+        function stopAlarmSound() {
+            clearInterval(soundInterval);
+        }
+
+        // --- CUSTOM MODAL ---
+        function showModal(title, message, iconClass, colorClass) {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            
+            const iconEl = document.getElementById('modal-icon');
+            iconEl.innerHTML = `<i class="${iconClass}"></i>`;
+            iconEl.className = `text-5xl ${colorClass} mb-4 animate-bounce`;
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-90');
+            content.classList.add('scale-100');
+            
+            startAlarmSound();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-90');
+            
+            stopAlarmSound();
+        }
+
+        // --- WORLD CLOCK ---
+        function updateClocks() {
+            const now = new Date();
+            
+            // Formatters
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const timeOptionsShort = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const dateOptions = { day: 'numeric', month: 'long', weekday: 'long' };
+
+            // Local Time
+            document.getElementById('local-time').textContent = now.toLocaleTimeString('tr-TR', timeOptions);
+            document.getElementById('local-date').textContent = now.toLocaleDateString('tr-TR', dateOptions);
+
+            // World Cities
+            const cities = [
+                { id: 'ny-time', tz: 'America/New_York' },
+                { id: 'lon-time', tz: 'Europe/London' },
+                { id: 'tok-time', tz: 'Asia/Tokyo' },
+                { id: 'syd-time', tz: 'Australia/Sydney' }
+            ];
+
+            cities.forEach(city => {
+                const cityTime = new Intl.DateTimeFormat('tr-TR', { ...timeOptionsShort, timeZone: city.tz }).format(now);
+                document.getElementById(city.id).textContent = cityTime;
+            });
+
+            checkAlarms(now);
+            requestAnimationFrame(updateClocks);
+        }
+
+        // --- ALARM LOGIC ---
+        let alarms = [];
+
+        function addAlarm() {
+            const input = document.getElementById('alarm-input');
+            const timeVal = input.value;
+            
+            if (!timeVal) return;
+
+            const newAlarm = {
+                id: Date.now(),
+                time: timeVal,
+                active: true,
+                triggered: false
+            };
+
+            alarms.push(newAlarm);
+            alarms.sort((a, b) => a.time.localeCompare(b.time));
+            renderAlarms();
+            input.value = '';
+        }
+
+        function toggleAlarm(id) {
+            const alarm = alarms.find(a => a.id === id);
+            if(alarm) {
+                alarm.active = !alarm.active;
+                alarm.triggered = false; // reset trigger
+                renderAlarms();
+            }
+        }
+
+        function deleteAlarm(id) {
+            alarms = alarms.filter(a => a.id !== id);
+            renderAlarms();
+        }
+
+        function renderAlarms() {
+            const list = document.getElementById('alarm-list');
+            const noMsg = document.getElementById('no-alarm-msg');
+            
+            if(alarms.length === 0) {
+                list.innerHTML = '';
+                list.appendChild(noMsg);
+                noMsg.style.display = 'block';
+                return;
+            }
+            
+            noMsg.style.display = 'none';
+            list.innerHTML = '';
+            
+            alarms.forEach(alarm => {
+                const li = document.createElement('li');
+                li.className = `flex justify-between items-center p-4 rounded-xl border ${alarm.active ? 'bg-slate-800/80 border-slate-600' : 'bg-slate-800/30 border-slate-700/50 opacity-60'} transition-all`;
+                
+                li.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-3xl font-mono text-white tracking-wide">${alarm.time}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${alarm.active ? 'checked' : ''} onchange="toggleAlarm(${alarm.id})">
+                            <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                        <button onclick="deleteAlarm(${alarm.id})" class="text-slate-400 hover:text-red-400 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function checkAlarms(now) {
+            const currentHM = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            alarms.forEach(alarm => {
+                if (alarm.active && !alarm.triggered && alarm.time === currentHM) {
+                    // Trigger Alarm
+                    alarm.triggered = true; 
+                    showModal("Alarm!", `Saat ${alarm.time} oldu.`, "fa-solid fa-clock", "text-blue-400");
+                    // Auto reset trigger after a minute
+                    setTimeout(() => { alarm.triggered = false; }, 61000);
+                }
+            });
+        }
+
+        // --- STOPWATCH LOGIC ---
+        let swStartTime = 0;
+        let swElapsedTime = 0;
+        let swInterval;
+        let isSwRunning = false;
+        let laps = [];
+
+        function formatStopwatch(ms) {
+            const totalSecs = Math.floor(ms / 1000);
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            const centisecs = Math.floor((ms % 1000) / 10);
+            
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centisecs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleStopwatch() {
+            const startBtn = document.getElementById('sw-start-btn');
+            const lapBtn = document.getElementById('sw-lap-btn');
+
+            if (!isSwRunning) {
+                // Start
+                swStartTime = Date.now() - swElapsedTime;
+                swInterval = setInterval(() => {
+                    swElapsedTime = Date.now() - swStartTime;
+                    document.getElementById('sw-display').textContent = formatStopwatch(swElapsedTime);
+                }, 10);
+                
+                isSwRunning = true;
+                startBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                startBtn.classList.remove('text-emerald-400');
+                startBtn.classList.add('text-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.1)]');
+                lapBtn.disabled = false;
+            } else {
+                // Pause
+                clearInterval(swInterval);
+                isSwRunning = false;
+                startBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                startBtn.classList.remove('text-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.1)]');
+                startBtn.classList.add('text-emerald-400');
+                lapBtn.disabled = true;
+            }
+        }
+
+        function resetStopwatch() {
+            clearInterval(swInterval);
+            isSwRunning = false;
+            swElapsedTime = 0;
+            laps = [];
+            
+            document.getElementById('sw-display').textContent = "00:00.00";
+            
+            const startBtn = document.getElementById('sw-start-btn');
+            startBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            startBtn.classList.remove('text-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.1)]');
+            startBtn.classList.add('text-emerald-400');
+            
+            document.getElementById('sw-lap-btn').disabled = true;
+            document.getElementById('sw-laps-container').classList.add('hidden');
+            document.getElementById('sw-laps').innerHTML = '';
+        }
+
+        function lapStopwatch() {
+            if(!isSwRunning) return;
+            
+            const prevLapTime = laps.length > 0 ? laps[laps.length - 1].total : 0;
+            const currentLapDuration = swElapsedTime - prevLapTime;
+            
+            laps.push({
+                duration: currentLapDuration,
+                total: swElapsedTime
+            });
+            
+            renderLaps();
+        }
+
+        function renderLaps() {
+            const container = document.getElementById('sw-laps-container');
+            const list = document.getElementById('sw-laps');
+            
+            container.classList.remove('hidden');
+            
+            const li = document.createElement('li');
+            li.className = "flex justify-between px-4 py-3 border-b border-slate-700/50 font-mono text-slate-300";
+            
+            const index = laps.length;
+            const lap = laps[index - 1];
+            
+            li.innerHTML = `
+                <span class="text-slate-500">#${index.toString().padStart(2, '0')}</span>
+                <span>${formatStopwatch(lap.duration)}</span>
+                <span class="text-white">${formatStopwatch(lap.total)}</span>
+            `;
+            
+            list.prepend(li); // Add to top
+        }
+
+        // --- TIMER LOGIC ---
+        let timerTotalSeconds = 0;
+        let timerRemainingSeconds = 0;
+        let timerInterval;
+        let isTimerRunning = false;
+
+        function updateTimerDisplay() {
+            const h = Math.floor(timerRemainingSeconds / 3600);
+            const m = Math.floor((timerRemainingSeconds % 3600) / 60);
+            const s = timerRemainingSeconds % 60;
+            
+            document.getElementById('timer-display').textContent = 
+                `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+
+            // Update Circle
+            const circle = document.getElementById('timer-progress');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            
+            // Adjust dasharray dynamically based on circle size
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            
+            const offset = circumference - (timerRemainingSeconds / timerTotalSeconds) * circumference;
+            circle.style.strokeDashoffset = isNaN(offset) ? 0 : offset;
+            
+            // Color change when low
+            if(timerTotalSeconds > 0 && timerRemainingSeconds < timerTotalSeconds * 0.1) {
+                circle.setAttribute('stroke', '#ef4444'); // red
+            } else {
+                circle.setAttribute('stroke', '#3b82f6'); // blue
+            }
+        }
+
+        function startTimer() {
+            if(isTimerRunning) return;
+
+            if (timerRemainingSeconds === 0) {
+                // First start from inputs
+                const h = parseInt(document.getElementById('timer-h').value) || 0;
+                const m = parseInt(document.getElementById('timer-m').value) || 0;
+                const s = parseInt(document.getElementById('timer-s').value) || 0;
+                
+                timerTotalSeconds = (h * 3600) + (m * 60) + s;
+                timerRemainingSeconds = timerTotalSeconds;
+            }
+
+            if (timerTotalSeconds === 0) return; // Nothing to count
+
+            document.getElementById('timer-input-mode').classList.add('hidden');
+            document.getElementById('timer-countdown-mode').classList.remove('hidden');
+            
+            updateTimerDisplay();
+
+            isTimerRunning = true;
+            const pauseBtn = document.getElementById('timer-pause-btn');
+            pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            
+            timerInterval = setInterval(() => {
+                timerRemainingSeconds--;
+                updateTimerDisplay();
+
+                if (timerRemainingSeconds <= 0) {
+                    // Timer Finished
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    showModal("Süre Doldu!", "Ayarladığınız geri sayım tamamlandı.", "fa-solid fa-hourglass-end", "text-emerald-400");
+                    resetTimer();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            const pauseBtn = document.getElementById('timer-pause-btn');
+            
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                pauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                pauseBtn.classList.replace('text-yellow-400', 'text-emerald-400');
+            } else if (timerRemainingSeconds > 0) {
+                isTimerRunning = true;
+                pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                pauseBtn.classList.replace('text-emerald-400', 'text-yellow-400');
+                
+                timerInterval = setInterval(() => {
+                    timerRemainingSeconds--;
+                    updateTimerDisplay();
+                    if (timerRemainingSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        showModal("Süre Doldu!", "Ayarladığınız geri sayım tamamlandı.", "fa-solid fa-hourglass-end", "text-emerald-400");
+                        resetTimer();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerRemainingSeconds = 0;
+            timerTotalSeconds = 0;
+            
+            const circle = document.getElementById('timer-progress');
+            circle.style.strokeDashoffset = 0;
+            circle.setAttribute('stroke', '#3b82f6');
+            
+            document.getElementById('timer-countdown-mode').classList.add('hidden');
+            document.getElementById('timer-input-mode').classList.remove('hidden');
+            
+            const pauseBtn = document.getElementById('timer-pause-btn');
+            pauseBtn.classList.replace('text-emerald-400', 'text-yellow-400');
+        }
+
+        // Initialize Everything
+        requestAnimationFrame(updateClocks);
+        renderAlarms();
+
+    </script>
+</body>
+</html>
